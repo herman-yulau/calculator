@@ -20,73 +20,60 @@ MODULE_DESCRIPTION("A Simple calculator");
 struct proc_dir_entry *new_dir;
 
 static ssize_t num1_read(struct file *file, char *buf, size_t count, loff_t *ppos) {
-	static int end = 0;
-	printk(KERN_INFO "read: %d\n", count );
-	if(!end) {
+	static int endfile = 0;
+	if(!endfile) {
 		int res = copy_to_user((void*)buf, &number1, strlen(number1));
-	      	end = 1;
-	      	//put_user( '\n', buf + strlen( buf_msg ) );   // buf — это адресное пространство пользователя 
-	      	//res = strlen( buf_msg ) + 1;
-	      	printk(KERN_INFO "Number 1 is : %s\n", number1);
+	      	endfile = 1;
+	      	printk(KERN_INFO "Number 1: %s\n", number1);
 	      	return res;
 	}
-	end = 0;
+	endfile = 0;
 	printk(KERN_INFO "EOF\n" );
 	return 0;
 }
 
 static ssize_t num1_write(struct file *file, const char *buf, size_t count, loff_t *ppos) {
-	   int res, len = count < LEN ? count : LEN;
-	   printk( KERN_INFO "write: %d\n", count );
-	   res = copy_from_user(&number1, (void*)buf, count);
-	   if( '\n' == number1[ len -1 ] ) 
-		   number1[ len -1 ] = '\0';
-	   else 
-		   number1[ len ] = '\0';
-	   printk( KERN_INFO "put bytes = %d\n", len );
-	   return len;
+	int res, len = count < LEN ? count : LEN;
+	res = copy_from_user(&number1, (void*)buf, count);
+	if ( '\n' == number1[len - 1]) 
+		number1[len - 1] = '\0';
+	else 
+		number1[len] = '\0';
+	return len;
 }
 
 static ssize_t num2_read(struct file *file, char *buf, size_t count, loff_t *ppos) {
-	static int end = 0;
-	printk(KERN_INFO "read: %d\n", count );
-	if(!end) {
+	static int endfile = 0;
+	if(!endfile) {
 		int res = copy_to_user((void*)buf, &number2, strlen(number2));
-	      	end = 1;
-	      	//put_user( '\n', buf + strlen( buf_msg ) );   // buf — это адресное пространство пользователя 
-	      	//res = strlen( buf_msg ) + 1;
-	      	printk(KERN_INFO "Number 2 is : %s\n", number2);
+	      	endfile = 1;
+	      	printk(KERN_INFO "Number 2: %s\n", number2);
 	      	return res;
 	}
-	end = 0;
+	endfile = 0;
 	printk(KERN_INFO "EOF\n" );
 	return 0;
 }
 
 static ssize_t num2_write(struct file *file, const char *buf, size_t count, loff_t *ppos) {
-	   int res, len = count < LEN ? count : LEN;
-	   printk( KERN_INFO "write: %d\n", count );
-	   res = copy_from_user(&number2, (void*)buf, count);
-	   if( '\n' == number2[ len -1 ] ) 
-		   number2[ len -1 ] = '\0';
-	   else 
-		   number2[ len ] = '\0';
-	   printk( KERN_INFO "put bytes = %d\n", len );
-	   return len;
+	int res, len = count < LEN ? count : LEN;
+	res = copy_from_user(&number2, (void*)buf, count);
+	if ( '\n' == number1[len - 1]) 
+		number1[len - 1] = '\0';
+	else 
+		number1[len] = '\0';
+	return len;
 }
 
 static ssize_t oper_read(struct file *file, char *buf, size_t count, loff_t *ppos) {
-	static int end = 0;
-	printk(KERN_INFO "read: %d\n", count );
-	if(!end) {
+	static int endfile = 0;
+	if(!endfile) {
 		int res = copy_to_user((void*)buf, &oper, strlen(oper));
-	      	end = 1;
-	      	//put_user( '\n', buf + strlen( buf_msg ) );   // buf — это адресное пространство пользователя 
-	      	//res = strlen( buf_msg ) + 1;
-	      	printk(KERN_INFO "Operation is : %s\n", oper);
+	      	endfile = 1;
+	      	printk(KERN_INFO "Operation: %s\n", oper);
 	      	return res;
 	}
-	end = 0;
+	endfile = 0;
 	printk(KERN_INFO "EOF\n" );
 	return 0;
 }
@@ -96,15 +83,14 @@ static ssize_t oper_write(struct file *file, const char *buf, size_t count, loff
 	long int num1, num2;
 	kstrtol(number1, 10, &num1);
 	kstrtol(number2, 10, &num2);
-	printk(KERN_INFO "num1 is : %d\n, num2 is %d\n", num1, num2);
-	printk( KERN_INFO "write: %d\n", count );
 	res = copy_from_user(&oper, (void*)buf, count);
-	if( '\n' == oper[len -1] ) 
-		oper[len -1] = '\0';
+	if ( '\n' == oper[len - 1]) 
+		oper[len - 1] = '\0';
 	else 
 		oper[len] = '\0';
-	if (!strcmp(oper, "sum"))
-		result = num1 + num2;
+	
+	if (!strcmp(oper, "sum")){
+		result = num1 + num2; printk(KERN_INFO "asa");}
 	else
 		if (!strcmp(oper, "sub"))
 			result = num1 - num2;
@@ -114,22 +100,18 @@ static ssize_t oper_write(struct file *file, const char *buf, size_t count, loff
 			else
 				if (!strcmp(oper, "div"))
 					result = num1 / num2;
-	printk( KERN_INFO "put bytes = %d\n", len);
 	return len;
 }
 
 static ssize_t res_read(struct file *file, char *buf, size_t count, loff_t *ppos) {
-	static int end = 0;
-	printk(KERN_INFO "read: %d\n", count );
-	if(!end) {
+	static int endfile = 0;
+	if(!endfile) {
 		int res = copy_to_user((void*)buf, &result, sizeof(result));
-	      	end = 1;
-	      	//put_user( '\n', buf + strlen( buf_msg ) );   // buf — это адресное пространство пользователя 
-	      	//res = strlen( buf_msg ) + 1;
-	      	printk(KERN_INFO "Result is : %d\n", result);
+	      	endfile = 1;
+	      	printk(KERN_INFO "Result: %d\n", result);
 	      	return res;
 	}
-	end = 0;
+	endfile = 0;
 	printk(KERN_INFO "EOF\n" );
 	return 0;
 }
@@ -170,39 +152,36 @@ static int __init proc_init( void ) {
 	fnum = proc_create(NAME_NODE1, 0, new_dir, &for1file); 
 	if (NULL == fnum) { 
 	      	ret = -ENOMEM; 
-	      	printk(KERN_ERR "can't create /proc/%s\n", NAME_NODE1); 
+	      	printk(KERN_ERR "can't create /proc/%s/%s\n", NAME_DIR, NAME_NODE1); 
 	      	goto err_node; 
 	}
 	
 	snum = proc_create(NAME_NODE2, 0, new_dir, &for2file); 
 	if (NULL == snum) { 
 	      	ret = -ENOMEM; 
-	      	printk(KERN_ERR "can't create /proc/%s\n", NAME_NODE2); 
+	      	printk(KERN_ERR "can't create /proc/%s/%s\n", NAME_DIR, NAME_NODE2); 
 	      	goto err_node; 
 	} 
 	
 	opr = proc_create(NAME_NODE3, 0, new_dir, &for3file); 
 	if (NULL == opr) { 
 	      	ret = -ENOMEM; 
-	      	printk(KERN_ERR "can't create /proc/%s\n", NAME_NODE3); 
+	      	printk(KERN_ERR "can't create /proc/%s/%s\n", NAME_DIR, NAME_NODE3); 
 	      	goto err_node; 
 	}
 	
 	res = proc_create(NAME_NODE4, 0, new_dir, &for4file); 
 	if (NULL == res) { 
 	      	ret = -ENOMEM; 
-	      	printk(KERN_ERR "can't create /proc/%s\n", NAME_NODE4); 
+	      	printk(KERN_ERR "can't create /proc/%s/%s\n", NAME_DIR, NAME_NODE4); 
 	      	goto err_node; 
 	} 
-		
-	   //new_node->uid = new_node->gid = 0; 
-	   //new_node->proc_fops = &node_fops; 
-	printk( KERN_INFO "module was loaded successfully!\n"); 
+	printk( KERN_INFO "Module was loaded successfully!\n"); 
 	return 0; 
 	err_node: 
-	  remove_proc_entry(NAME_DIR, NULL); 
+		remove_proc_entry(NAME_DIR, NULL); 
 	err_dir: 
-	   return ret; 
+		return ret; 
 }
 
 static void __exit proc_exit(void) {
@@ -217,7 +196,6 @@ static void __exit proc_exit(void) {
 	printk(KERN_INFO "/proc/%s/%s removed\n", NAME_DIR, NAME_NODE4);
 	printk(KERN_INFO "/proc/%s removed\n", NAME_DIR);
 }
-
 
 module_init(proc_init);
 module_exit(proc_exit);
