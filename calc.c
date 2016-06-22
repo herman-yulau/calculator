@@ -25,7 +25,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Herman");
 MODULE_DESCRIPTION("A Simple calculator");
 
-static char oper[LEN], number1[LEN], number2[LEN], an[LEN+1];
+static char oper[LEN], number1[LEN], number2[LEN], an[LEN];
 static int result;
 
 /* This two functions are for both filesystems */
@@ -41,31 +41,6 @@ int calculate(char* str, int num1, int num2)
 	else if (!strcmp(str, "div"))
 		return num1 / num2;
 	else return 1;
-}
-
-int tostr(int num, char* str)
-{	/* convert result to a string */
-	int sign = 0, i; 
-	if (num < 0) {
-		sign = 1;
-		num *= -1;
-		str[0] = '-';
-	}
-	if (num > 99) {
-		i = LEN - 1 + sign;
-		str[LEN] = '\0';
-	} else if (num >= 10) {
-		i = LEN - 2 + sign;
-		str[i] = '\0';
-	} else {
-		i = LEN - 3 + sign;
-		str[i] = '\0';
-	}
-	for (--i; i - sign >= 0; --i) {
-		str[i] = '0' + num % 10;
-		num /= 10;
-	}
-	return 0;
 }
 
 /* ----------------------------------------------------------------------------------------------------------- */
@@ -127,7 +102,7 @@ static ssize_t oper_store(struct class *class, struct class_attribute *attr, con
 
 static ssize_t res_show(struct class *class, struct class_attribute *attr, char *buf) 
 {	/* reading result */
-	tostr(result, an);
+	snprintf(an, LEN, "%d", result);
    	strcpy(buf, an);
 	printk(KERN_INFO "Result is %s\n", an);
    	return strlen(buf);
@@ -240,7 +215,7 @@ static ssize_t res_read(struct file *file, char *buf, size_t count, loff_t *ppos
 	static int endfile = 0; 
 	int read_bytes;
 	if (!endfile) {
-		tostr(result, an);
+		snprintf(an, LEN, "%d", result);
 		read_bytes = copy_to_user((void*)buf, &an, strlen(an));
 		put_user('\n', buf + strlen(an));   
 		read_bytes = strlen(an) + 1;
