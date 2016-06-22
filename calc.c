@@ -12,6 +12,7 @@
 
 #define PROC 1
 #define SYS 0
+/* Choose required filesystem by setting FILESYSTEM const to the appropriate value from above */
 #define FILESYSTEM SYS
 #define NAME_DIR  "calc"
 #define NAME_FILE1 "fnum"
@@ -25,29 +26,25 @@ MODULE_AUTHOR("Herman");
 MODULE_DESCRIPTION("A Simple calculator");
 
 static char oper[LEN], number1[LEN], number2[LEN], an[LEN+1];
-static long int result;
-struct proc_dir_entry *new_dir;
+static int result;
+
+/* This two functions are for both filesystems */
 
 int calculate(char* str, int num1, int num2)
-{
-	
-	if (!strcmp(str, "sum"))				/* and simultaneously do calculations */
-	{printk(KERN_INFO "oper: %s\n", str); return num1 + num2;}
-	else
-		if (!strcmp(str, "sub"))
-			return num1 - num2;
-		else
-			if (!strcmp(str, "mul"))
-				return num1 * num2;
-			else
-				if (!strcmp(str, "div"))
-					return num1 / num2;
-				else
-					return 1;
+{	/* do calculations */
+	if (!strcmp(str, "sum"))				
+		return num1 + num2;
+	else if (!strcmp(str, "sub"))
+		return num1 - num2;
+	else if (!strcmp(str, "mul"))
+		return num1 * num2;
+	else if (!strcmp(str, "div"))
+		return num1 / num2;
+	else return 1;
 }
 
 int tostr(int num, char* str)
-{
+{	/* convert result to a string */
 	int sign = 0, i; 
 	if (num < 0) {
 		sign = 1;
@@ -57,16 +54,13 @@ int tostr(int num, char* str)
 	if (num > 99) {
 		i = LEN - 1 + sign;
 		str[LEN] = '\0';
+	} else if (num >= 10) {
+		i = LEN - 2 + sign;
+		str[i] = '\0';
+	} else {
+		i = LEN - 3 + sign;
+		str[i] = '\0';
 	}
-	else
-		if (num >= 10) {
-			i = LEN - 2 + sign;
-			str[i] = '\0';
-		}
-		else {
-			i = LEN - 3 + sign;
-			str[i] = '\0';
-		}
 	for (--i; i - sign >= 0; --i) {
 		str[i] = '0' + num % 10;
 		num /= 10;
@@ -74,83 +68,89 @@ int tostr(int num, char* str)
 	return 0;
 }
 
+/* ----------------------------------------------------------------------------------------------------------- */
+/* Declarations for filesystem /sys */
 #if FILESYSTEM == SYS
+
 static struct class *calc;
 static ssize_t num1_show(struct class *class, struct class_attribute *attr, char *buf) 
-{
+{	/* reading first number */
 	strcpy(buf, number1);
-   	printk(KERN_INFO "read %d\n", strlen(buf));
+   	printk(KERN_INFO "Number 1: %s\n", number1);
    	return strlen(buf);
 }
 
 static ssize_t num1_store(struct class *class, struct class_attribute *attr, const char *buf, size_t count) 
-{
-   	printk(KERN_INFO "write %d\n", count);
+{	/* write first number */
    	strncpy(number1, buf, count);
    	number1[count] = '\0';
+	printk(KERN_INFO "Number 1 = %s is stored\n", number1);
    	return count;
 }
 
 static ssize_t num2_show(struct class *class, struct class_attribute *attr, char *buf) 
-{
+{	/* reading second number */
    	strcpy(buf, number2);
-   	printk(KERN_INFO "read %d\n", strlen(buf));
+   	printk(KERN_INFO "Number 2: %s\n", number2);
    	return strlen(buf);
 }
 
 static ssize_t num2_store(struct class *class, struct class_attribute *attr, const char *buf, size_t count) 
-{
-   	printk(KERN_INFO "write %d\n", count);
+{	/* write first number */
    	strncpy(number2, buf, count);
    	number2[count] = '\0';
+	printk(KERN_INFO "Number 2 = %s is stored\n", number2);
    	return count;
 }
 
 static ssize_t oper_show(struct class *class, struct class_attribute *attr, char *buf) 
-{
+{	/* reading operation */
    	strcpy(buf, oper);
-   	printk(KERN_INFO "read %d\n", strlen(buf));
+   	printk(KERN_INFO "Operation: %s\n", oper);
    	return strlen(buf);
 }
 
 static ssize_t oper_store(struct class *class, struct class_attribute *attr, const char *buf, size_t count) 
-{
+{	/* write operation */
    	int num1, num2;
-	printk(KERN_INFO "write %d\n", count);
    	strncpy(oper, buf, count);
    	if ('\n' == oper[count - 1]) 
 		oper[count - 1] = '\0';
 	else 
 		oper[count] = '\0';
+	printk(KERN_INFO "Operation = %s is stored\n", oper);
 	kstrtoint(number1, 10, &num1);
 	kstrtoint(number2, 10, &num2);
-	printk(KERN_INFO "Num1: %d, Num2: %d\n", num1, num2);
 	result = calculate(oper, num1, num2);
    	return count;
 }
 
 static ssize_t res_show(struct class *class, struct class_attribute *attr, char *buf) 
-{	
+{	/* reading result */
 	tostr(result, an);
    	strcpy(buf, an);
-   	printk(KERN_INFO "read %d\n", strlen(buf));
+	printk(KERN_INFO "Result is %s\n", an);
    	return strlen(buf);
 }
 
 static ssize_t res_store(struct class *class, struct class_attribute *attr, const char *buf, size_t count) 
-{
+{	/* writing result is  not supported */
 	printk(KERN_INFO "User can't write in result\n");
    	return 0;
 }
 
-CLASS_ATTR(fnum, 0660, &num1_show, &num1_store);
-CLASS_ATTR(snum, 0660, &num2_show, &num2_store);
-CLASS_ATTR(operation, 0660, &oper_show, &oper_store);
-CLASS_ATTR(result, 0660, &res_show, &res_store);
+CLASS_ATTR(fnum, 0770, &num1_show, &num1_store);
+CLASS_ATTR(snum, 0770, &num2_show, &num2_store);
+CLASS_ATTR(operation, 0770, &oper_show, &oper_store);
+CLASS_ATTR(result, 0770, &res_show, &res_store);
 
 #endif
 
+/* ----------------------------------------------------------------------------------------------------------- */
+/* Declarations for filesystem /proc */
 #if FILESYSTEM == PROC
+
+struct proc_dir_entry *new_dir;
 static ssize_t num1_read(struct file *file, char *buf, size_t count, loff_t *ppos) 
 {	/* reading first number */
 	static int endfile = 0;
@@ -174,6 +174,7 @@ static ssize_t num1_write(struct file *file, const char *buf, size_t count, loff
 		number1[len - 1] = '\0';
 	else 
 		number1[len] = '\0';
+	printk(KERN_INFO "Number 1 = %s is stored\n", number1);
 	return len;
 }
 
@@ -200,6 +201,7 @@ static ssize_t num2_write(struct file *file, const char *buf, size_t count, loff
 		number2[len - 1] = '\0';
 	else 
 		number2[len] = '\0';
+	printk(KERN_INFO "Number 2 = %s is stored\n", number2);
 	return len;
 }
 
@@ -208,8 +210,7 @@ static ssize_t oper_read(struct file *file, char *buf, size_t count, loff_t *ppo
 	static int endfile = 0;
 	if (!endfile) {
 		int read_bytes = copy_to_user((void*)buf, &oper, strlen(oper));
-		put_user('\n', buf + strlen(oper));   
-		read_bytes = strlen(oper) + 1;
+		read_bytes = strlen(oper);
 		printk(KERN_INFO "Operation: %s\n", oper);
 		endfile = 1;
 		return read_bytes;
@@ -229,6 +230,7 @@ static ssize_t oper_write(struct file *file, const char *buf, size_t count, loff
 		oper[len - 1] = '\0';
 	else 
 		oper[len] = '\0';
+	printk(KERN_INFO "Operation = %s is stored\n", oper);
 	result = calculate(oper, num1, num2);
 	return len;
 }
@@ -255,23 +257,31 @@ static const struct file_operations for1file = {	/* operations for every file */
 	   .read = num1_read,
 	   .write = num1_write
 	};
+
 static const struct file_operations for2file = {
 	   .owner = THIS_MODULE,
 	   .read = num2_read,
 	   .write = num2_write
 	};
+
 static const struct file_operations for3file = {
 	   .owner = THIS_MODULE,
 	   .read = oper_read,
 	   .write = oper_write
 	};
+
 static const struct file_operations for4file = {
 	   .owner = THIS_MODULE,
 	   .read = res_read
 	};
 #endif
 
+/* ----------------------------------------------------------------------------------------------------------- */
+
 static int __init proc_init( void ) {
+	
+/* ----------------------------------------------------------------------------------------------------------- */
+	/* Initializations for filesystem /proc */
 	#if FILESYSTEM == PROC
 	int ret; 
 	struct proc_dir_entry *fnum;
@@ -332,8 +342,9 @@ static int __init proc_init( void ) {
 		return ret;
 	#endif
 	
+/* ----------------------------------------------------------------------------------------------------------- */
+	/* Initializations for filesystem /sys */
 	#if FILESYSTEM == SYS
-	int res;
    	calc = class_create(THIS_MODULE, NAME_DIR);
    	if (IS_ERR(calc)) 
 		printk("bad class create\n");
@@ -344,9 +355,11 @@ static int __init proc_init( void ) {
    	printk( "Module was loaded succesfully\n" );
    	return 0;
 	#endif
+/* ----------------------------------------------------------------------------------------------------------- */
 }
 
 static void __exit proc_exit(void) {
+/* ----------------------------------------------------------------------------------------------------------- */
 	#if FILESYSTEM == PROC
 	remove_proc_entry(NAME_FILE1, new_dir);
 	remove_proc_entry(NAME_FILE2, new_dir);
@@ -359,6 +372,7 @@ static void __exit proc_exit(void) {
 	printk(KERN_INFO "/proc/%s/%s removed\n", NAME_DIR, NAME_FILE4);
 	printk(KERN_INFO "/proc/%s removed\n", NAME_DIR);
 	#endif
+/* ----------------------------------------------------------------------------------------------------------- */
 	#if FILESYSTEM == SYS
    	class_remove_file(calc, &class_attr_fnum);
    	class_destroy(calc);
@@ -368,6 +382,7 @@ static void __exit proc_exit(void) {
 	printk(KERN_INFO "/sys/class/%s/%s removed\n", NAME_DIR, NAME_FILE4);
 	printk(KERN_INFO "/sys/class/%s removed\n", NAME_DIR);
 	#endif
+/* ----------------------------------------------------------------------------------------------------------- */
 }
 
 module_init(proc_init);
